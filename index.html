@@ -245,11 +245,39 @@ tr:hover td { background: #f7fafc; }
 
 <!-- 履歴ビュー -->
 <div id="viewHistory">
+  <div class="backup-box" style="margin-bottom:12px">
+    <h2 style="font-size:1rem;color:#4a5568;margin-bottom:6px">➕ 過去の記録を追加・修正</h2>
+    <p style="font-size:0.8rem;color:#718096;margin-bottom:10px;line-height:1.6">入れ忘れた日や、過去の打刻を直したいときに使います。<br>同じ日付・同じ人で追加すると上書きされます。</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:0.8rem;color:#718096;min-width:48px">日付</label>
+        <input type="date" id="pastDate" style="padding:6px 8px;border-radius:7px;border:1px solid #cbd5e0;font-size:0.85rem">
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:0.8rem;color:#718096;min-width:48px">名前</label>
+        <select id="pastName" style="padding:6px 8px;border-radius:7px;border:1px solid #cbd5e0;font-size:0.85rem"></select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:0.8rem;color:#718096;min-width:48px">出勤</label>
+        <input type="time" id="pastIn" style="padding:6px 8px;border-radius:7px;border:1px solid #cbd5e0;font-size:0.85rem;width:108px">
+        <label style="font-size:0.8rem;color:#718096">退勤</label>
+        <input type="time" id="pastOut" style="padding:6px 8px;border-radius:7px;border:1px solid #cbd5e0;font-size:0.85rem;width:108px">
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:0.8rem;color:#718096;min-width:48px">休憩</label>
+        <input type="time" id="pastBs" style="padding:6px 8px;border-radius:7px;border:1px solid #cbd5e0;font-size:0.85rem;width:108px">
+        <span style="color:#a0aec0">〜</span>
+        <input type="time" id="pastBe" style="padding:6px 8px;border-radius:7px;border:1px solid #cbd5e0;font-size:0.85rem;width:108px">
+      </div>
+      <button class="manual-btn" style="padding:11px;font-size:0.9rem;font-weight:bold" onclick="addPastRecord()">この内容で追加・保存</button>
+      <div style="font-size:0.75rem;color:#a0aec0;line-height:1.5">※ 休憩がない日は休憩欄は空のままでOKです。<br>※ 出勤だけは必ず入れてください。</div>
+    </div>
+  </div>
   <div class="history-filter">
     <label>絞り込み：</label>
     <select id="filterName" onchange="renderHistory()">
       <option value="all">全員</option>
-      <option>柳原</option><option>植村</option><option>友紀子</option><option>安結実</option>
+      <option>くみこ</option><option>みつこ</option><option>ゆきこ</option><option>あゆみ</option>
     </select>
     <select id="filterMonth" onchange="renderHistory()"></select>
   </div>
@@ -318,7 +346,7 @@ tr:hover td { background: #f7fafc; }
 <script>
 // ======== 設定 ========
 const MEMBERS = ['くみこ', 'みつこ', 'ゆきこ', 'あゆみ'];
-const COLORS  = { '柳原':'#4a90d9', '植村':'#48bb78', '友紀子':'#f6ad55', '安結実':'#fc8181' };
+const COLORS  = { 'くみこ':'#4a90d9', 'みつこ':'#48bb78', 'ゆきこ':'#f6ad55', 'あゆみ':'#fc8181' };
 const TODAY_KEY = 'kintai4_today';
 const HIST_KEY  = 'kintai4_hist';
 const weekdays  = ['日','月','火','水','木','金','土'];
@@ -684,6 +712,30 @@ function manualStamp(name) {
   renderToday();
 }
 
+// ======== 過去の記録を追加 ========
+function addPastRecord() {
+  const dateRaw = document.getElementById('pastDate').value; // YYYY-MM-DD
+  const name    = document.getElementById('pastName').value;
+  const inT     = document.getElementById('pastIn').value;
+  const outT    = document.getElementById('pastOut').value;
+  const bsT     = document.getElementById('pastBs').value;
+  const beT     = document.getElementById('pastBe').value;
+  if (!dateRaw) { alert('日付を選んでください'); return; }
+  if (!name)    { alert('名前を選んでください'); return; }
+  if (!inT)     { alert('出勤時刻を入れてください'); return; }
+  const date = dateRaw.replace(/-/g, '/'); // YYYY/MM/DD
+  const data = { in: inT || null, breakStart: bsT || null, breakEnd: beT || null, out: outT || null };
+  archiveRecord(date, name, data);
+  const w = calcWork(data);
+  alert(`✅ ${date} ${name} の記録を保存しました${w ? `\n実働: ${w}` : ''}`);
+  document.getElementById('pastIn').value  = '';
+  document.getElementById('pastOut').value = '';
+  document.getElementById('pastBs').value  = '';
+  document.getElementById('pastBe').value  = '';
+  buildMonthFilter();
+  renderHistory();
+}
+
 // ======== 履歴ビュー ========
 function buildMonthFilter() {
   const hist   = loadHist();
@@ -802,6 +854,11 @@ function backupRestore(event) {
 }
 
 // ======== 初期化 ========
+// 過去入力フォームの名前リストを動的生成
+(function initNameSelect(){
+  const pn = document.getElementById('pastName');
+  if (pn) pn.innerHTML = MEMBERS.map(m => `<option>${m}</option>`).join('');
+})();
 renderToday();
 </script>
 </body>
